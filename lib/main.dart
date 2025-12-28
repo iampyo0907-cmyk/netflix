@@ -1,9 +1,83 @@
 import 'package:flutter/material.dart';
 
+/// =======================
+/// 데이터 모델
+/// =======================
+class Content {
+  final String title;
+  final String genre;
+  final String imagePath;
+
+  Content({
+    required this.title,
+    required this.genre,
+    required this.imagePath,
+  });
+}
+
+class Actor {
+  final String name;
+  final String description;
+
+  Actor({
+    required this.name,
+    required this.description,
+  });
+}
+
+/// =======================
+/// 전역 데이터
+/// =======================
+
+final List<Content> bannerContents = [
+  Content(title: '인터스텔라', genre: 'SF', imagePath: 'assets/images/a1.jpg'),
+  Content(title: '군함도', genre: '액션', imagePath: 'assets/images/a2.jpg'),
+  Content(title: '1987', genre: '드라마', imagePath: 'assets/images/a3.jpg'),
+  Content(title: '라라랜드', genre: '로맨스', imagePath: 'assets/images/a4.jpg'),
+];
+
+final List<Content> allContents = [
+  Content(title: '파묘', genre: '공포', imagePath: 'assets/images/p1.jpg'),
+  Content(title: '1917', genre: '전쟁', imagePath: 'assets/images/p2.jpg'),
+  Content(title: '범죄와의 전쟁', genre: '범죄', imagePath: 'assets/images/p3.jpg'),
+  Content(title: '다크 나이트', genre: '액션', imagePath: 'assets/images/p4.jpg'),
+  Content(title: '너의 이름은', genre: '애니메이션', imagePath: 'assets/images/p5.jpg'),
+  Content(title: '백두산', genre: '재난', imagePath: 'assets/images/p6.jpg'),
+];
+
+final Map<String, List<Actor>> movieActors = {
+  '인터스텔라': [
+    Actor(name: '매튜 맥커너히', description: '인터스텔라에서 쿠퍼 역'),
+    Actor(name: '앤 해서웨이', description: '인터스텔라에서 브랜드 박사 역'),
+  ],
+  '파묘': [
+    Actor(name: '최민식', description: '파묘의 핵심 인물'),
+    Actor(name: '김고은', description: '파묘의 주요 등장인물'),
+  ],
+};
+
+final List<String> genres = [
+  '전체',
+  'SF',
+  '드라마',
+  '액션',
+  '로맨스',
+  '범죄',
+  '공포',
+  '전쟁',
+  '애니메이션',
+  '재난',
+];
+
+List<Content> myList = [];
+
 void main() {
   runApp(const MyApp());
 }
 
+/// =======================
+/// 앱 시작
+/// =======================
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -11,38 +85,36 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Mobile App UI',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
-      ),
-      home: const PhoneSizedWrapper(),
+      theme: ThemeData.dark(),
+      home: const PhoneFrame(child: MainPage()),
     );
   }
 }
 
-// 🔥 휴대폰 비율(9:16) 고정 래퍼
-class PhoneSizedWrapper extends StatelessWidget {
-  const PhoneSizedWrapper({super.key});
+/// =======================
+/// 9:16 폰 프레임
+/// =======================
+class PhoneFrame extends StatelessWidget {
+  final Widget child;
+  const PhoneFrame({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: AspectRatio(
-          aspectRatio: 9 / 16,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: const MainPage(),
-          ),
+    return Center(
+      child: AspectRatio(
+        aspectRatio: 9 / 16,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: child,
         ),
       ),
     );
   }
 }
 
-// 메인 페이지
+/// =======================
+/// 메인 페이지
+/// =======================
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -51,46 +123,306 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const HomePage(),
-    const NewPage(),
-    const Center(
-      child: Text(
-        '프로필 화면',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-      ),
-    ),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  int index = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: _pages[_selectedIndex],
+      body: index == 0 ? const NetflixHome() : const MyListPage(),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.blueAccent,
+        currentIndex: index,
+        onTap: (i) => setState(() => index = i),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "홈",
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: '내 목록'),
+        ],
+      ),
+    );
+  }
+}
+
+/// =======================
+/// 배너 슬라이더
+/// =======================
+class BannerSlider extends StatefulWidget {
+  const BannerSlider({super.key});
+
+  @override
+  State<BannerSlider> createState() => _BannerSliderState();
+}
+
+class _BannerSliderState extends State<BannerSlider> {
+  final PageController controller = PageController();
+  int current = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 2200), autoSlide);
+  }
+
+  void autoSlide() {
+    if (!controller.hasClients) return;
+    current = (current + 1) % bannerContents.length;
+    controller.animateToPage(
+      current,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+    Future.delayed(const Duration(milliseconds: 2200), autoSlide);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: PageView.builder(
+        controller: controller,
+        itemCount: bannerContents.length,
+        itemBuilder: (context, i) {
+          final content = bannerContents[i];
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      PhoneFrame(child: DetailPage(content: content)),
+                ),
+              );
+            },
+            child: Image.asset(content.imagePath, fit: BoxFit.cover),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// =======================
+/// 홈 화면
+/// =======================
+class NetflixHome extends StatefulWidget {
+  const NetflixHome({super.key});
+
+  @override
+  State<NetflixHome> createState() => _NetflixHomeState();
+}
+
+class _NetflixHomeState extends State<NetflixHome> {
+  String selectedGenre = '전체';
+
+  List<Content> get filteredContents {
+    if (selectedGenre == '전체') return allContents;
+    return allContents.where((c) => c.genre == selectedGenre).toList();
+  }
+
+  Widget genreSelector() {
+    return SizedBox(
+      height: 46,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: genres.length,
+        itemBuilder: (context, i) {
+          final genre = genres[i];
+          final selected = genre == selectedGenre;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(genre),
+              selected: selected,
+              onSelected: (_) => setState(() => selectedGenre = genre),
+              selectedColor: Colors.white,
+              backgroundColor: Colors.grey[800],
+              labelStyle: TextStyle(
+                color: selected ? Colors.black : Colors.white,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget contentCard(Content content) {
+    final added = myList.contains(content);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                PhoneFrame(child: DetailPage(content: content)),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fiber_new),
-            label: "NEW",
+        );
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: 110,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              image: DecorationImage(
+                image: AssetImage(content.imagePath),
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "프로필",
+          Positioned(
+            top: 6,
+            right: 6,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  added ? myList.remove(content) : myList.add(content);
+                });
+              },
+              child: CircleAvatar(
+                radius: 12,
+                backgroundColor: Colors.black87,
+                child: Icon(added ? Icons.check : Icons.add, size: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget section(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(title,
+              style:
+              const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        SizedBox(
+          height: 170,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filteredContents.length,
+            itemBuilder: (_, i) => contentCard(filteredContents[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        const BannerSlider(),
+        genreSelector(),
+        section('추천 콘텐츠'),
+        section('인기 콘텐츠'),
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+}
+
+/// =======================
+/// 영화 상세 페이지
+/// =======================
+class DetailPage extends StatefulWidget {
+  final Content content;
+  const DetailPage({super.key, required this.content});
+
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+class _DetailPageState extends State<DetailPage> {
+  @override
+  Widget build(BuildContext context) {
+    final added = myList.contains(widget.content);
+    final actors = movieActors[widget.content.title] ?? [];
+
+    return Scaffold(
+      body: ListView(
+        children: [
+          Stack(
+            children: [
+              AspectRatio(
+                aspectRatio: 2 / 3,
+                child:
+                Image.asset(widget.content.imagePath, fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 20,
+                left: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(widget.content.title,
+                style:
+                const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(widget.content.genre,
+                style: const TextStyle(color: Colors.grey)),
+          ),
+          if (actors.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('출연 배우',
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...actors.map(
+                        (actor) => GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhoneFrame(
+                              child: ActorDetailPage(actor: actor),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(actor.name,
+                            style: const TextStyle(
+                                color: Colors.blueAccent)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  added
+                      ? myList.remove(widget.content)
+                      : myList.add(widget.content);
+                });
+              },
+              child: Text(added ? '내 목록에서 제거' : '내 목록에 추가'),
+            ),
           ),
         ],
       ),
@@ -98,228 +430,76 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// 🔹 홈 화면
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final int cardsPerLine = 12;
-    final double cardWidth = 80;
-    final double cardHeight = 150;
-    final double sidePadding = 16;
-    final double cardSpacing = 8;
-
-    Widget buildCardLine(int lineIndex) {
-      return SizedBox(
-        height: cardHeight,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          physics: const ClampingScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: sidePadding),
-          itemCount: cardsPerLine,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: EdgeInsets.only(
-                left: index == 0 ? 0 : cardSpacing / 2,
-                right: index == cardsPerLine - 1 ? 0 : cardSpacing / 2,
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailPage(
-                          cardLabel: 'L${lineIndex + 1}-${index + 1}'),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: cardWidth,
-                  decoration: BoxDecoration(
-                    gradient: lineIndex == 0
-                        ? const LinearGradient(
-                        colors: [Colors.blueAccent, Colors.lightBlueAccent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight)
-                        : const LinearGradient(
-                        colors: [Colors.greenAccent, Colors.tealAccent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(4, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      'L${lineIndex + 1}-${index + 1}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        buildCardLine(0),
-        const SizedBox(height: 16),
-        buildCardLine(1),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-}
-
-// 🔹 NEW 화면
-class NewPage extends StatelessWidget {
-  const NewPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.orangeAccent, Colors.deepOrangeAccent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(4, 4),
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    color: Colors.black.withOpacity(0.4),
-                    child: Text(
-                      '사각형 ${index + 1}',
-                      style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// 🔹 상세 화면: AppBar도 제거한 버전
-class DetailPage extends StatelessWidget {
-  final String cardLabel;
-  const DetailPage({super.key, required this.cardLabel});
+/// =======================
+/// 배우 상세 페이지
+/// =======================
+class ActorDetailPage extends StatelessWidget {
+  final Actor actor;
+  const ActorDetailPage({super.key, required this.actor});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: AspectRatio(
-          aspectRatio: 9 / 16,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Scaffold(
-              backgroundColor: Colors.black,
-              body: Column(
-                children: [
-                  // 🔙 직접 만든 뒤로가기 버튼
-                  Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(top: 40, left: 16, bottom: 8),
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                    ),
-                  ),
-
-                  // 상단 16:9 박스
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Colors.orangeAccent, Colors.deepOrangeAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(4, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          '상단 16:9 상자',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        '$cardLabel ',
-                        style: const TextStyle(
-                            fontSize: 24,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          IconButton(
+            alignment: Alignment.centerLeft,
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
+          const SizedBox(height: 20),
+          Text(actor.name,
+              style:
+              const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Text(actor.description,
+              style: const TextStyle(color: Colors.grey)),
+        ],
       ),
+    );
+  }
+}
+
+/// =======================
+/// 내 목록
+/// =======================
+class MyListPage extends StatelessWidget {
+  const MyListPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (myList.isEmpty) {
+      return const Center(
+        child:
+        Text('내 목록이 비어 있습니다', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: myList.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 2 / 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemBuilder: (_, i) {
+        final content = myList[i];
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    PhoneFrame(child: DetailPage(content: content)),
+              ),
+            );
+          },
+          child: Image.asset(content.imagePath, fit: BoxFit.cover),
+        );
+      },
     );
   }
 }
