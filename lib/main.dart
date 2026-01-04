@@ -967,7 +967,7 @@ class _MyListPageState extends State<MyListPage> {
               child: Text('내 목록에 해당하는 리뷰 기록이 없습니다', style: TextStyle(color: Colors.grey)),
             );
           }
-
+//ㅠ
           return Column(
             children: records.map((entry) {
               final title = entry.key;
